@@ -14,6 +14,17 @@ interface ParameterFormProps {
   onChange: (params: SimulationParams) => void
 }
 
+function InfoHint({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      className="ml-1 inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-[var(--border)] text-[9px] leading-none text-[var(--text-faint)]"
+    >
+      i
+    </span>
+  )
+}
+
 function Section({
   title,
   children,
@@ -24,17 +35,26 @@ function Section({
   defaultOpen?: boolean
 }) {
   return (
-    <details open={defaultOpen} className="group rounded-lg border border-slate-200 bg-white">
-      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-800 marker:content-none [&::-webkit-details-marker]:hidden">
+    <details open={defaultOpen} className="group">
+      <summary className="mb-3 cursor-pointer list-none marker:content-none [&::-webkit-details-marker]:hidden">
         <span className="flex items-center justify-between">
-          {title}
-          <span className="text-slate-400 group-open:rotate-180 transition-transform">▾</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+            {title}
+          </span>
+          <span className="text-xs text-[var(--text-faint)] transition-transform group-open:rotate-180">
+            ▾
+          </span>
         </span>
       </summary>
-      <div className="space-y-3 border-t border-slate-100 px-4 pb-4 pt-3">{children}</div>
+      <div className="space-y-3.5">{children}</div>
     </details>
   )
 }
+
+const fieldClass =
+  'w-full rounded-lg border border-[var(--border)] bg-[var(--bg-input)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-faint)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]'
+
+const labelClass = 'mb-1.5 flex items-center text-[13px] text-[var(--text-muted)]'
 
 function IntegerField({
   label,
@@ -42,12 +62,14 @@ function IntegerField({
   onChange,
   min,
   max,
+  hint,
 }: {
   label: string
   value: number
   onChange: (v: number) => void
   min?: number
   max?: number
+  hint?: string
 }) {
   const [display, setDisplay] = useState(String(value))
   const [focused, setFocused] = useState(false)
@@ -77,8 +99,11 @@ function IntegerField({
   }
 
   return (
-    <label className="block text-sm">
-      <span className="mb-1 block text-slate-600">{label}</span>
+    <label className="block">
+      <span className={labelClass}>
+        {label}
+        {hint && <InfoHint text={hint} />}
+      </span>
       <input
         type="text"
         inputMode="numeric"
@@ -89,7 +114,7 @@ function IntegerField({
           commit(display)
         }}
         onChange={(e) => setDisplay(e.target.value.replace(/\D/g, ''))}
-        className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className={fieldClass}
       />
     </label>
   )
@@ -102,6 +127,7 @@ function DecimalField({
   suffix,
   min,
   max,
+  hint,
 }: {
   label: string
   value: number
@@ -109,6 +135,7 @@ function DecimalField({
   suffix?: string
   min?: number
   max?: number
+  hint?: string
 }) {
   const [display, setDisplay] = useState(String(value))
   const [focused, setFocused] = useState(false)
@@ -138,8 +165,11 @@ function DecimalField({
   }
 
   return (
-    <label className="block text-sm">
-      <span className="mb-1 block text-slate-600">{label}</span>
+    <label className="block">
+      <span className={labelClass}>
+        {label}
+        {hint && <InfoHint text={hint} />}
+      </span>
       <div className="relative">
         <input
           type="text"
@@ -157,10 +187,10 @@ function DecimalField({
               parts.length <= 1 ? parts[0] : `${parts[0]}.${parts.slice(1).join('')}`
             setDisplay(sanitized)
           }}
-          className={`w-full rounded-md border border-slate-300 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${suffix ? 'pl-3 pr-8' : 'px-3'}`}
+          className={`${fieldClass} ${suffix ? 'pr-8' : ''}`}
         />
         {suffix && (
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-faint)]">
             {suffix}
           </span>
         )}
@@ -173,10 +203,12 @@ function CurrencyField({
   label,
   value,
   onChange,
+  hint,
 }: {
   label: string
   value: number
   onChange: (v: number) => void
+  hint?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const pendingCursor = useRef<number | null>(null)
@@ -252,10 +284,13 @@ function CurrencyField({
   }
 
   return (
-    <label className="block text-sm">
-      <span className="mb-1 block text-slate-600">{label}</span>
+    <label className="block">
+      <span className={labelClass}>
+        {label}
+        {hint && <InfoHint text={hint} />}
+      </span>
       <div className="relative">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-faint)]">
           $
         </span>
         <input
@@ -267,7 +302,7 @@ function CurrencyField({
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className="w-full rounded-md border border-slate-300 py-2 pl-7 pr-3 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className={`${fieldClass} pl-7`}
         />
       </div>
     </label>
@@ -278,10 +313,12 @@ function PercentField({
   label,
   value,
   onChange,
+  hint,
 }: {
   label: string
   value: number
   onChange: (v: number) => void
+  hint?: string
 }) {
   const displayValue = Math.round(value * 1000) / 10
   return (
@@ -291,6 +328,7 @@ function PercentField({
       onChange={(v) => onChange(v / 100)}
       suffix="%"
       min={0}
+      hint={hint}
     />
   )
 }
@@ -302,8 +340,23 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
   ) => onChange({ ...params, [key]: value })
 
   return (
-    <div className="space-y-3">
-      <Section title="Personal Timeline">
+    <div className="space-y-6">
+      <Section title="Portfolio">
+        <CurrencyField
+          label="Current net worth"
+          value={params.currentNetWorth}
+          onChange={(v) => update('currentNetWorth', v)}
+          hint="Starting portfolio balance today"
+        />
+        <CurrencyField
+          label="Annual spending at retirement"
+          value={params.annualSpending}
+          onChange={(v) => update('annualSpending', v)}
+          hint="Inflation-adjusted spending once retired"
+        />
+      </Section>
+
+      <Section title="Retirement Timeline">
         <div className="grid grid-cols-2 gap-3">
           <IntegerField
             label="Current age"
@@ -318,6 +371,7 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
             onChange={(v) => update('retirementAge', v)}
             min={40}
             max={100}
+            hint="Age when contributions stop and spending begins"
           />
           <IntegerField
             label="End age"
@@ -325,13 +379,9 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
             onChange={(v) => update('endAge', v)}
             min={60}
             max={120}
+            hint="Planning horizon — success means lasting to this age"
           />
         </div>
-        <CurrencyField
-          label="Current net worth"
-          value={params.currentNetWorth}
-          onChange={(v) => update('currentNetWorth', v)}
-        />
       </Section>
 
       <Section title="Accumulation">
@@ -339,11 +389,13 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
           label="Annual contributions"
           value={params.annualContributions}
           onChange={(v) => update('annualContributions', v)}
+          hint="Pre-retirement yearly savings into the portfolio"
         />
         <PercentField
           label="Contribution growth rate"
           value={params.contributionGrowthRate}
           onChange={(v) => update('contributionGrowthRate', v)}
+          hint="Annual increase in contributions"
         />
         <CurrencyField
           label="Pre-retirement annual expenses"
@@ -352,16 +404,12 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
         />
       </Section>
 
-      <Section title="Retirement Spending">
-        <CurrencyField
-          label="Annual spending at retirement"
-          value={params.annualSpending}
-          onChange={(v) => update('annualSpending', v)}
-        />
+      <Section title="Inflation & Spending">
         <PercentField
           label="Inflation rate"
           value={params.inflationRate}
           onChange={(v) => update('inflationRate', v)}
+          hint="Applied to retirement spending each year"
         />
       </Section>
 
@@ -404,24 +452,33 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
         />
       </Section>
 
-      <Section title="Simulation Settings">
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Return sampling mode</span>
+      <Section title="Simulation">
+        <label className="block">
+          <span className={labelClass}>
+            Return sampling mode
+            <InfoHint text="Bootstrap picks random historical years; sequential preserves year-to-year order with wrap-around" />
+          </span>
           <select
             value={params.samplingMode}
             onChange={(e) =>
               update('samplingMode', e.target.value as SimulationParams['samplingMode'])
             }
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={`${fieldClass} appearance-none bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8`}
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235c6578' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E")`,
+            }}
           >
             <option value="bootstrap">Random year bootstrap</option>
             <option value="sequential">Sequential block (wrap-around)</option>
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 flex justify-between text-slate-600">
-            <span>Number of trials</span>
-            <span className="font-medium text-slate-900">
+        <label className="block">
+          <span className={`${labelClass} justify-between`}>
+            <span className="flex items-center">
+              Number of trials
+              <InfoHint text="More trials = smoother estimates, slower runs" />
+            </span>
+            <span className="font-medium tabular-nums text-[var(--text)]">
               {params.numTrials.toLocaleString()}
             </span>
           </span>
@@ -432,11 +489,11 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
             step={500}
             value={params.numTrials}
             onChange={(e) => update('numTrials', parseInt(e.target.value, 10))}
-            className="w-full accent-blue-600"
+            className="mt-1 w-full"
           />
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-600">Random seed (optional)</span>
+        <label className="block">
+          <span className={labelClass}>Random seed (optional)</span>
           <input
             type="number"
             value={params.randomSeed ?? ''}
@@ -445,7 +502,7 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
               const raw = e.target.value
               update('randomSeed', raw === '' ? null : parseInt(raw, 10))
             }}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={fieldClass}
           />
         </label>
       </Section>

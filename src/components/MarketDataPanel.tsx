@@ -5,51 +5,51 @@ export function MarketDataPanel() {
   const stats = HISTORICAL_STATS
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">
-        Market Data (S&P 500)
+    <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-input)] p-4">
+      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-faint)]">
+        Market Data
       </h3>
-      <p className="mb-3 text-xs text-slate-500">
-        Returns sampled from {stats.startYear}–{stats.endYear} historical annual
-        total returns. Past performance does not guarantee future results.
+      <p className="mb-3 text-xs leading-relaxed text-[var(--text-muted)]">
+        S&amp;P 500 total returns, {stats.startYear}–{stats.endYear}. Past performance does not
+        guarantee future results.
       </p>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-[13px]">
         <div>
-          <dt className="text-slate-500">Years of data</dt>
-          <dd className="font-medium text-slate-900">{stats.count}</dd>
+          <dt className="text-[var(--text-faint)]">Years</dt>
+          <dd className="font-medium tabular-nums text-[var(--text)]">{stats.count}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Mean return</dt>
-          <dd className="font-medium text-slate-900">
+          <dt className="text-[var(--text-faint)]">Mean return</dt>
+          <dd className="font-medium tabular-nums text-[var(--text)]">
             {formatPercent(stats.meanReturn)}
           </dd>
         </div>
         <div>
-          <dt className="text-slate-500">Std deviation</dt>
-          <dd className="font-medium text-slate-900">
+          <dt className="text-[var(--text-faint)]">Std deviation</dt>
+          <dd className="font-medium tabular-nums text-[var(--text)]">
             {formatPercent(stats.stdDev)}
           </dd>
         </div>
         <div>
-          <dt className="text-slate-500">Positive years</dt>
-          <dd className="font-medium text-slate-900">
+          <dt className="text-[var(--text-faint)]">Positive years</dt>
+          <dd className="font-medium tabular-nums text-[var(--text)]">
             {formatPercent(stats.positiveYearPct, 0)}
           </dd>
         </div>
         <div>
-          <dt className="text-slate-500">Best year</dt>
-          <dd className="font-medium text-emerald-700">
+          <dt className="text-[var(--text-faint)]">Best year</dt>
+          <dd className="font-medium tabular-nums text-[var(--success)]">
             {stats.bestYear.year} ({formatPercent(stats.bestYear.totalReturn)})
           </dd>
         </div>
         <div>
-          <dt className="text-slate-500">Worst year</dt>
-          <dd className="font-medium text-red-700">
+          <dt className="text-[var(--text-faint)]">Worst year</dt>
+          <dd className="font-medium tabular-nums text-[var(--danger)]">
             {stats.worstYear.year} ({formatPercent(stats.worstYear.totalReturn)})
           </dd>
         </div>
       </dl>
-      <div className="mt-4 h-16">
+      <div className="mt-4 h-14">
         <svg
           viewBox={`0 0 ${SP500_ANNUAL_RETURNS.length} 40`}
           className="h-full w-full"
@@ -65,15 +65,22 @@ export function MarketDataPanel() {
                 y={y}
                 width={0.9}
                 height={height}
-                fill={entry.totalReturn >= 0 ? '#10b981' : '#ef4444'}
-                opacity={0.7}
+                fill={entry.totalReturn >= 0 ? '#3dd68c' : '#f07178'}
+                opacity={0.75}
               />
             )
           })}
-          <line x1={0} y1={20} x2={SP500_ANNUAL_RETURNS.length} y2={20} stroke="#94a3b8" strokeWidth={0.2} />
+          <line
+            x1={0}
+            y1={20}
+            x2={SP500_ANNUAL_RETURNS.length}
+            y2={20}
+            stroke="#5c6578"
+            strokeWidth={0.2}
+          />
         </svg>
-        <p className="mt-1 text-center text-xs text-slate-400">
-          Annual returns sparkline ({stats.startYear}–{stats.endYear})
+        <p className="mt-1 text-center text-[10px] text-[var(--text-faint)]">
+          Annual returns ({stats.startYear}–{stats.endYear})
         </p>
       </div>
     </section>
