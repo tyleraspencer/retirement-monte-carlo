@@ -1,4 +1,5 @@
 export type SamplingMode = 'bootstrap' | 'sequential'
+export type ContributionMode = 'salary' | 'fixed'
 
 export interface SimulationParams {
   currentAge: number
@@ -6,6 +7,10 @@ export interface SimulationParams {
   endAge: number
   currentNetWorth: number
 
+  contributionMode: ContributionMode
+  annualSalary: number
+  savingsRate: number
+  salaryGrowthRate: number
   annualContributions: number
   contributionGrowthRate: number
   preRetirementExpenses: number

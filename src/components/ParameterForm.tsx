@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { SimulationParams } from '../types'
+import type { ContributionMode, SimulationParams } from '../types'
 import {
   backspaceAtComma,
   deleteAtComma,
   extractDigits,
+  formatCurrency,
   formatCurrencyInputValue,
   formatDigitString,
   resolveCurrencyCursor,
@@ -314,11 +315,13 @@ function PercentField({
   value,
   onChange,
   hint,
+  max = Infinity,
 }: {
   label: string
   value: number
   onChange: (v: number) => void
   hint?: string
+  max?: number
 }) {
   const displayValue = Math.round(value * 1000) / 10
   return (
@@ -328,6 +331,7 @@ function PercentField({
       onChange={(v) => onChange(v / 100)}
       suffix="%"
       min={0}
+      max={max}
       hint={hint}
     />
   )
@@ -385,23 +389,97 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
       </Section>
 
       <Section title="Accumulation">
-        <CurrencyField
-          label="Annual contributions"
-          value={params.annualContributions}
-          onChange={(v) => update('annualContributions', v)}
-          hint="Pre-retirement yearly savings into the portfolio"
-        />
-        <PercentField
-          label="Contribution growth rate"
-          value={params.contributionGrowthRate}
-          onChange={(v) => update('contributionGrowthRate', v)}
-          hint="Annual increase in contributions"
-        />
-        <CurrencyField
-          label="Pre-retirement annual expenses"
-          value={params.preRetirementExpenses}
-          onChange={(v) => update('preRetirementExpenses', v)}
-        />
+        <div
+          className="grid grid-cols-2 rounded-lg border border-[var(--border)] bg-[var(--bg-input)] p-0.5"
+          role="group"
+          aria-label="Contribution mode"
+        >
+          {(
+            [
+              { value: 'salary', label: 'From salary' },
+              { value: 'fixed', label: 'Fixed amount' },
+            ] as const
+          ).map((option) => {
+            const active = params.contributionMode === option.value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => update('contributionMode', option.value as ContributionMode)}
+                className={`rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                  active
+                    ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {params.contributionMode === 'salary' ? (
+          <>
+            <CurrencyField
+              label="Annual salary"
+              value={params.annualSalary}
+              onChange={(v) => update('annualSalary', v)}
+              hint="Gross annual income used to size savings"
+            />
+            <PercentField
+              label="Savings rate"
+              value={params.savingsRate}
+              onChange={(v) => update('savingsRate', v)}
+              hint="Fraction of salary saved each year (before retirement)"
+              max={100}
+            />
+            <p className="text-xs text-[var(--text-faint)]">
+              ≈ {formatCurrency(params.annualSalary * params.savingsRate)} first-year
+              contribution
+            </p>
+          </>
+        ) : (
+          <CurrencyField
+            label="Annual contributions"
+            value={params.annualContributions}
+            onChange={(v) => update('annualContributions', v)}
+            hint="Pre-retirement yearly savings into the portfolio"
+          />
+        )}
+
+        <details className="group">
+          <summary className="cursor-pointer list-none text-[13px] text-[var(--text-muted)] marker:content-none [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-1.5">
+              <span className="text-xs text-[var(--text-faint)] transition-transform group-open:rotate-180">
+                ▾
+              </span>
+              More options
+            </span>
+          </summary>
+          <div className="mt-3 space-y-3.5">
+            {params.contributionMode === 'salary' ? (
+              <PercentField
+                label="Salary growth rate"
+                value={params.salaryGrowthRate}
+                onChange={(v) => update('salaryGrowthRate', v)}
+                hint="Annual raise applied to salary (and thus contributions)"
+              />
+            ) : (
+              <PercentField
+                label="Contribution growth rate"
+                value={params.contributionGrowthRate}
+                onChange={(v) => update('contributionGrowthRate', v)}
+                hint="Annual increase in contributions"
+              />
+            )}
+            <CurrencyField
+              label="Pre-retirement annual expenses"
+              value={params.preRetirementExpenses}
+              onChange={(v) => update('preRetirementExpenses', v)}
+              hint="Optional portfolio draw during working years"
+            />
+          </div>
+        </details>
       </Section>
 
       <Section title="Inflation & Spending">

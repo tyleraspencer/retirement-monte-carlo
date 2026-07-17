@@ -6,6 +6,10 @@ export const DEFAULT_PARAMS: SimulationParams = {
   endAge: 95,
   currentNetWorth: 100_000,
 
+  contributionMode: 'salary',
+  annualSalary: 100_000,
+  savingsRate: 0.2,
+  salaryGrowthRate: 0.03,
   annualContributions: 20_000,
   contributionGrowthRate: 0,
   preRetirementExpenses: 0,
@@ -47,6 +51,17 @@ export function validateParams(params: SimulationParams): ValidationError[] {
   }
   if (params.currentNetWorth < 0) {
     errors.push({ field: 'currentNetWorth', message: 'Net worth cannot be negative' })
+  }
+  if (params.contributionMode === 'salary') {
+    if (params.annualSalary < 0) {
+      errors.push({ field: 'annualSalary', message: 'Salary cannot be negative' })
+    }
+    if (params.savingsRate < 0 || params.savingsRate > 1) {
+      errors.push({
+        field: 'savingsRate',
+        message: 'Savings rate must be between 0% and 100%',
+      })
+    }
   }
   if (params.numTrials < 100 || params.numTrials > 20_000) {
     errors.push({
