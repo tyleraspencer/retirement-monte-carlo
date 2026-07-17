@@ -42,6 +42,7 @@ function depletionTone(
     }
   }
 
+  // Never depletes among failures → healthy signal
   if (results.medianDepletionAge == null) {
     return {
       accent: 'text-[var(--success)]',
@@ -49,6 +50,7 @@ function depletionTone(
     }
   }
 
+  // Otherwise color by overall plan success/failure
   const tone = planTone(results.successRate)
   if (tone === 'success') {
     return {
