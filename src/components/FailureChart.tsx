@@ -11,6 +11,7 @@ import type { AggregatedResults } from '../types'
 
 interface FailureChartProps {
   results: AggregatedResults | null
+  compareResults?: AggregatedResults | null
 }
 
 const tooltipStyle = {
@@ -21,7 +22,86 @@ const tooltipStyle = {
   fontSize: 12,
 }
 
-export function FailureChart({ results }: FailureChartProps) {
+function MiniFailure({
+  title,
+  results,
+  color,
+}: {
+  title: string
+  results: AggregatedResults | null
+  color: string
+}) {
+  if (!results) {
+    return (
+      <div className="flex h-36 items-center justify-center text-xs text-[var(--text-faint)]">
+        Awaiting {title}
+      </div>
+    )
+  }
+
+  if (results.depletionHistogram.length === 0) {
+    return (
+      <div className="flex h-36 items-center justify-center text-xs text-[var(--text-faint)]">
+        {title}: no failed trials
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)]">
+        <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+        {title}
+      </div>
+      <ResponsiveContainer width="100%" height={150}>
+        <BarChart data={results.depletionHistogram} margin={{ top: 4, right: 4, bottom: 8, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#1c2230" vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 9, fill: '#5c6578' }}
+            interval="preserveStartEnd"
+            angle={-30}
+            textAnchor="end"
+            height={48}
+            axisLine={{ stroke: '#252b38' }}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: '#5c6578' }}
+            allowDecimals={false}
+            axisLine={false}
+            tickLine={false}
+            width={28}
+          />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            formatter={(value) => [`${Number(value ?? 0)} trials`, 'Count']}
+          />
+          <Bar dataKey="count" fill={color} radius={[3, 3, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+export function FailureChart({ results, compareResults = null }: FailureChartProps) {
+  const comparing = compareResults != null
+
+  if (comparing) {
+    return (
+      <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-elevated)] p-4 sm:p-5">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h3 className="text-sm font-semibold text-[var(--text)]">Age at Portfolio Depletion</h3>
+          <span className="text-xs text-[var(--text-faint)]">Failed trials · A / B</span>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <MiniFailure title="Plan A" results={results} color="#f07178" />
+          <MiniFailure title="Plan B" results={compareResults} color="#3ecfbf" />
+        </div>
+      </div>
+    )
+  }
+
   if (!results || results.depletionHistogram.length === 0) {
     return (
       <div className="flex h-52 items-center justify-center rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-elevated)] p-4 text-sm text-[var(--text-faint)]">

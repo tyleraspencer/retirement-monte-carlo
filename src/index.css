@@ -18,6 +18,8 @@
   --danger-soft: rgba(240, 113, 120, 0.12);
   --warning: #e6a23c;
   --warning-soft: rgba(230, 162, 60, 0.12);
+  --compare-b: #3ecfbf;
+  --compare-b-soft: rgba(62, 207, 191, 0.14);
   --radius: 10px;
   --font: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
