@@ -29,6 +29,14 @@ export const DEFAULT_PARAMS: SimulationParams = {
   randomSeed: null,
 }
 
+/** Plan B seed: slightly leaner spending so compare isn't identical. */
+export function createCompareParamsB(from: SimulationParams = DEFAULT_PARAMS): SimulationParams {
+  return {
+    ...from,
+    annualSpending: Math.round(from.annualSpending * 0.9),
+  }
+}
+
 export interface ValidationError {
   field: keyof SimulationParams
   message: string

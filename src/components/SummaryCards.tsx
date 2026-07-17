@@ -1,10 +1,19 @@
 import type { AggregatedResults, SimulationParams } from '../types'
 import { formatCompactCurrency, formatCurrency, formatPercent } from '../utils/format'
 
+interface CompareProps {
+  resultsA: AggregatedResults | null
+  resultsB: AggregatedResults | null
+  paramsA: SimulationParams
+  paramsB: SimulationParams
+  activePlan: 'A' | 'B'
+}
+
 interface SummaryCardsProps {
   results: AggregatedResults | null
   params: SimulationParams
   loading: boolean
+  compare?: CompareProps
 }
 
 function successTone(rate: number | null) {
@@ -33,7 +42,6 @@ function depletionTone(
     }
   }
 
-  // Never depletes among failures → healthy signal
   if (results.medianDepletionAge == null) {
     return {
       accent: 'text-[var(--success)]',
@@ -41,7 +49,6 @@ function depletionTone(
     }
   }
 
-  // Otherwise color by overall plan success/failure
   const tone = planTone(results.successRate)
   if (tone === 'success') {
     return {
@@ -108,7 +115,137 @@ function buildNarrative(
   }
 }
 
-export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
+function formatDeltaPp(a: number, b: number): string {
+  const delta = (b - a) * 100
+  const sign = delta > 0 ? '+' : ''
+  return `${sign}${delta.toFixed(1)} pp`
+}
+
+function formatDeltaMoney(a: number, b: number): string {
+  const delta = b - a
+  const sign = delta > 0 ? '+' : delta < 0 ? '−' : ''
+  return `${sign}${formatCompactCurrency(Math.abs(delta))}`
+}
+
+function depletionLabel(results: AggregatedResults | null): string {
+  if (!results) return '—'
+  if (results.medianDepletionAge == null) return 'Never'
+  return `Age ${Math.round(results.medianDepletionAge)}`
+}
+
+function CompareStrip({ compare }: { compare: CompareProps }) {
+  const { resultsA, resultsB } = compare
+  const successDelta =
+    resultsA && resultsB ? formatDeltaPp(resultsA.successRate, resultsB.successRate) : '—'
+  const wealthDelta =
+    resultsA && resultsB
+      ? formatDeltaMoney(resultsA.medianFinalBalance, resultsB.medianFinalBalance)
+      : '—'
+
+  const successWinner =
+    resultsA && resultsB
+      ? resultsB.successRate > resultsA.successRate
+        ? 'B'
+        : resultsB.successRate < resultsA.successRate
+          ? 'A'
+          : null
+      : null
+
+  const rows = [
+    {
+      label: 'Success rate',
+      a: resultsA ? formatPercent(resultsA.successRate, 1) : '—',
+      b: resultsB ? formatPercent(resultsB.successRate, 1) : '—',
+      delta: successDelta,
+      deltaTone:
+        resultsA && resultsB
+          ? resultsB.successRate > resultsA.successRate
+            ? 'text-[var(--success)]'
+            : resultsB.successRate < resultsA.successRate
+              ? 'text-[var(--danger)]'
+              : 'text-[var(--text-muted)]'
+          : 'text-[var(--text-muted)]',
+    },
+    {
+      label: 'Median final balance',
+      a: resultsA ? formatCompactCurrency(resultsA.medianFinalBalance) : '—',
+      b: resultsB ? formatCompactCurrency(resultsB.medianFinalBalance) : '—',
+      delta: wealthDelta,
+      deltaTone:
+        resultsA && resultsB
+          ? resultsB.medianFinalBalance > resultsA.medianFinalBalance
+            ? 'text-[var(--success)]'
+            : resultsB.medianFinalBalance < resultsA.medianFinalBalance
+              ? 'text-[var(--danger)]'
+              : 'text-[var(--text-muted)]'
+          : 'text-[var(--text-muted)]',
+    },
+    {
+      label: 'Median depletion',
+      a: depletionLabel(resultsA),
+      b: depletionLabel(resultsB),
+      delta: 'B − A',
+      deltaTone: 'text-[var(--text-faint)]',
+    },
+  ]
+
+  return (
+    <div className="space-y-3">
+      {successWinner && resultsA && resultsB && (
+        <p className="text-[13px] text-[var(--text-muted)]">
+          {successWinner === 'B' ? (
+            <>
+              Plan B improves success by{' '}
+              <span className="font-medium text-[var(--compare-b)]">{successDelta}</span> vs Plan A.
+            </>
+          ) : (
+            <>
+              Plan A leads on success by{' '}
+              <span className="font-medium text-[var(--accent)]">
+                {formatDeltaPp(resultsB.successRate, resultsA.successRate)}
+              </span>{' '}
+              vs Plan B.
+            </>
+          )}
+        </p>
+      )}
+
+      <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-elevated)]">
+        <div className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-2 border-b border-[var(--border-subtle)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-faint)]">
+          <span>Metric</span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+            Plan A
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[var(--compare-b)]" />
+            Plan B
+          </span>
+          <span>Δ (B−A)</span>
+        </div>
+        {rows.map((row) => (
+          <div
+            key={row.label}
+            className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-2 border-b border-[var(--border-subtle)] px-4 py-3 last:border-b-0"
+          >
+            <span className="text-[13px] text-[var(--text-muted)]">{row.label}</span>
+            <span className="truncate text-[15px] font-semibold tabular-nums text-[var(--accent)]">
+              {row.a}
+            </span>
+            <span className="truncate text-[15px] font-semibold tabular-nums text-[var(--compare-b)]">
+              {row.b}
+            </span>
+            <span className={`truncate text-[13px] font-medium tabular-nums ${row.deltaTone}`}>
+              {row.delta}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function SummaryCards({ results, params, loading, compare }: SummaryCardsProps) {
   const narrative = buildNarrative(results, params)
   const lastPath = results?.percentilePaths[results.percentilePaths.length - 1]
   const p10Final = lastPath?.p10
@@ -174,11 +311,24 @@ export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
     return 'border-[var(--border)] bg-[var(--bg-input)] text-[var(--text-muted)]'
   }
 
+  const planLabel = compare ? `Plan ${compare.activePlan}` : null
+
   return (
     <div className={`space-y-4 ${loading ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-elevated)]">
-        <div className="absolute inset-y-0 left-0 w-1 bg-[var(--success)]" />
+        <div
+          className="absolute inset-y-0 left-0 w-1"
+          style={{
+            background:
+              compare?.activePlan === 'B' ? 'var(--compare-b)' : 'var(--success)',
+          }}
+        />
         <div className="px-5 py-4 pl-6">
+          {planLabel && (
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-faint)]">
+              {planLabel} summary
+            </p>
+          )}
           <p className="text-[15px] leading-relaxed text-[var(--text)]">{narrative.body}</p>
           <div className="mt-3.5 flex flex-wrap gap-2">
             {narrative.pills.map((pill) => (
@@ -193,25 +343,29 @@ export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {cards.map((card) => (
-          <div
-            key={card.label}
-            className={`min-w-0 rounded-[var(--radius)] border px-4 py-4 ${card.shell}`}
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-faint)]">
-              {card.label}
-            </p>
-            <p
-              title={card.title}
-              className={`mt-1.5 truncate text-2xl font-semibold tabular-nums leading-snug tracking-tight sm:text-[1.65rem] ${card.accent}`}
+      {compare ? (
+        <CompareStrip compare={compare} />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {cards.map((card) => (
+            <div
+              key={card.label}
+              className={`min-w-0 rounded-[var(--radius)] border px-4 py-4 ${card.shell}`}
             >
-              {card.value}
-            </p>
-            <p className="mt-1.5 text-xs text-[var(--text-faint)]">{card.sub}</p>
-          </div>
-        ))}
-      </div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-faint)]">
+                {card.label}
+              </p>
+              <p
+                title={card.title}
+                className={`mt-1.5 truncate text-2xl font-semibold tabular-nums leading-snug tracking-tight sm:text-[1.65rem] ${card.accent}`}
+              >
+                {card.value}
+              </p>
+              <p className="mt-1.5 text-xs text-[var(--text-faint)]">{card.sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
