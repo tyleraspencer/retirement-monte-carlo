@@ -14,6 +14,53 @@ function successTone(rate: number | null) {
   return 'text-[var(--danger)]'
 }
 
+type PlanTone = 'neutral' | 'success' | 'warning' | 'danger'
+
+function planTone(rate: number | null): PlanTone {
+  if (rate == null) return 'neutral'
+  if (rate >= 0.8) return 'success'
+  if (rate >= 0.5) return 'warning'
+  return 'danger'
+}
+
+function depletionTone(
+  results: AggregatedResults | null,
+): { accent: string; shell: string } {
+  if (!results) {
+    return {
+      accent: 'text-[var(--text)]',
+      shell: 'border-[var(--border)] bg-[var(--bg-elevated)]',
+    }
+  }
+
+  // Never depletes among failures → healthy signal
+  if (results.medianDepletionAge == null) {
+    return {
+      accent: 'text-[var(--success)]',
+      shell: 'border-[var(--success)]/35 bg-[var(--success-soft)]',
+    }
+  }
+
+  // Otherwise color by overall plan success/failure
+  const tone = planTone(results.successRate)
+  if (tone === 'success') {
+    return {
+      accent: 'text-[var(--warning)]',
+      shell: 'border-[var(--warning)]/35 bg-[var(--warning-soft)]',
+    }
+  }
+  if (tone === 'warning') {
+    return {
+      accent: 'text-[var(--warning)]',
+      shell: 'border-[var(--warning)]/40 bg-[var(--warning-soft)]',
+    }
+  }
+  return {
+    accent: 'text-[var(--danger)]',
+    shell: 'border-[var(--danger)]/40 bg-[var(--danger-soft)]',
+  }
+}
+
 function buildNarrative(
   results: AggregatedResults | null,
   params: SimulationParams,
@@ -69,6 +116,8 @@ export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
     ? Math.round(results.successRate * params.numTrials)
     : null
 
+  const depletion = depletionTone(results)
+
   const cards = [
     {
       label: 'Probability of Success',
@@ -79,6 +128,7 @@ export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
           ? `${solventCount.toLocaleString()} of ${params.numTrials.toLocaleString()} sims solvent`
           : 'Portfolio lasts to end age',
       accent: successTone(results?.successRate ?? null),
+      shell: 'border-[var(--border)] bg-[var(--bg-elevated)]',
     },
     {
       label: 'Median Final Balance',
@@ -86,6 +136,7 @@ export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
       title: results ? formatCurrency(results.medianFinalBalance) : undefined,
       sub: '50th percentile at end age',
       accent: 'text-[var(--text)]',
+      shell: 'border-[var(--border)] bg-[var(--bg-elevated)]',
     },
     {
       label: '10th Pct. Final Balance',
@@ -93,6 +144,7 @@ export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
       title: p10Final != null ? formatCurrency(p10Final) : undefined,
       sub: 'Bad-luck scenario floor',
       accent: 'text-[var(--text)]',
+      shell: 'border-[var(--border)] bg-[var(--bg-elevated)]',
     },
     {
       label: 'Median Depletion Age',
@@ -103,8 +155,12 @@ export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
             ? 'Never'
             : '—',
       title: undefined,
-      sub: 'Among failed trials',
-      accent: 'text-[var(--text)]',
+      sub:
+        results?.medianDepletionAge == null && results
+          ? 'No failed trials depleted'
+          : 'Among failed trials',
+      accent: depletion.accent,
+      shell: depletion.shell,
     },
   ]
 
@@ -141,18 +197,18 @@ export function SummaryCards({ results, params, loading }: SummaryCardsProps) {
         {cards.map((card) => (
           <div
             key={card.label}
-            className="min-w-0 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-4"
+            className={`min-w-0 rounded-[var(--radius)] border px-4 py-4 ${card.shell}`}
           >
             <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-faint)]">
               {card.label}
             </p>
             <p
               title={card.title}
-              className={`mt-1.5 truncate text-2xl font-semibold tabular-nums leading-none tracking-tight sm:text-[1.65rem] ${card.accent}`}
+              className={`mt-1.5 truncate text-2xl font-semibold tabular-nums leading-snug tracking-tight sm:text-[1.65rem] ${card.accent}`}
             >
               {card.value}
             </p>
-            <p className="mt-2 text-xs text-[var(--text-faint)]">{card.sub}</p>
+            <p className="mt-1.5 text-xs text-[var(--text-faint)]">{card.sub}</p>
           </div>
         ))}
       </div>

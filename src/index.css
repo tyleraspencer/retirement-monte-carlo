@@ -15,7 +15,9 @@
   --success: #3dd68c;
   --success-soft: rgba(61, 214, 140, 0.12);
   --danger: #f07178;
+  --danger-soft: rgba(240, 113, 120, 0.12);
   --warning: #e6a23c;
+  --warning-soft: rgba(230, 162, 60, 0.12);
   --radius: 10px;
   --font: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
