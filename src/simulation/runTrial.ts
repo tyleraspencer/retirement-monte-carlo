@@ -24,6 +24,7 @@ export function runTrial(
   let generalInflation = 1
   let retirementInflation = 1
   let contributionAmount = params.annualContributions
+  let salary = params.annualSalary
   sampler.reset()
 
   for (let age = params.currentAge; age <= params.endAge; age++) {
@@ -31,9 +32,17 @@ export function runTrial(
     balance *= 1 + r
 
     if (age < params.retirementAge) {
-      balance += contributionAmount
+      const contrib =
+        params.contributionMode === 'salary'
+          ? salary * params.savingsRate
+          : contributionAmount
+      balance += contrib
       balance -= params.preRetirementExpenses * generalInflation
-      contributionAmount *= 1 + params.contributionGrowthRate
+      if (params.contributionMode === 'salary') {
+        salary *= 1 + params.salaryGrowthRate
+      } else {
+        contributionAmount *= 1 + params.contributionGrowthRate
+      }
       generalInflation *= 1 + params.inflationRate
     } else {
       const spending = params.annualSpending * retirementInflation
