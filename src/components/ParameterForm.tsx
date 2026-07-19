@@ -1,14 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ContributionMode, SimulationParams } from '../types'
-import {
-  backspaceAtComma,
-  deleteAtComma,
-  extractDigits,
-  formatCurrency,
-  formatCurrencyInputValue,
-  formatDigitString,
-  resolveCurrencyCursor,
-} from '../utils/format'
+import { formatCurrency, parseCurrencyInput } from '../utils/format'
 
 interface ParameterFormProps {
   params: SimulationParams
@@ -211,77 +203,25 @@ function CurrencyField({
   onChange: (v: number) => void
   hint?: string
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const pendingCursor = useRef<number | null>(null)
-  const [display, setDisplay] = useState(() => formatCurrencyInputValue(value))
-  const [editDigits, setEditDigits] = useState(String(value))
+  const [display, setDisplay] = useState(() => String(value))
   const [focused, setFocused] = useState(false)
 
   useEffect(() => {
     if (!focused) {
-      setDisplay(formatCurrencyInputValue(value))
+      setDisplay(String(value))
     }
   }, [value, focused])
 
-  useLayoutEffect(() => {
-    const el = inputRef.current
-    if (el && pendingCursor.current !== null) {
-      el.setSelectionRange(pendingCursor.current, pendingCursor.current)
-      pendingCursor.current = null
-    }
-  }, [display])
-
-  const handleFocus = () => {
-    setFocused(true)
-    const digits = String(value)
-    const formatted = formatDigitString(digits)
-    setEditDigits(digits)
-    setDisplay(formatted)
-    pendingCursor.current = formatted.length
-  }
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target
-    const oldValue = display
-    const oldCursor = input.selectionStart ?? oldValue.length
-    const digits = extractDigits(input.value)
-    const formatted = formatDigitString(digits)
-
-    pendingCursor.current = resolveCurrencyCursor(
-      oldValue,
-      formatted,
-      oldCursor,
-      digits,
-    )
-    setEditDigits(digits)
-    setDisplay(formatted)
+    const digits = e.target.value.replace(/\D/g, '')
+    setDisplay(digits)
   }
 
   const handleBlur = () => {
     setFocused(false)
-    const numeric = editDigits === '' ? 0 : parseInt(editDigits, 10)
-    onChange(Number.isFinite(numeric) ? numeric : 0)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const input = e.currentTarget
-    const cursor = input.selectionStart ?? 0
-    const end = input.selectionEnd ?? cursor
-    if (cursor !== end) return
-
-    const edit =
-      e.key === 'Backspace'
-        ? backspaceAtComma(display, cursor)
-        : e.key === 'Delete'
-          ? deleteAtComma(display, cursor)
-          : null
-
-    if (!edit) return
-
-    e.preventDefault()
-    setEditDigits(edit.digits)
-    setDisplay(edit.formatted)
-    pendingCursor.current = edit.cursor
+    const numeric = parseCurrencyInput(display)
+    onChange(numeric)
+    setDisplay(String(numeric))
   }
 
   return (
@@ -295,13 +235,11 @@ function CurrencyField({
           $
         </span>
         <input
-          ref={inputRef}
           type="text"
           inputMode="numeric"
           value={display}
           onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
+          onFocus={() => setFocused(true)}
           onBlur={handleBlur}
           className={`${fieldClass} pl-7`}
         />
